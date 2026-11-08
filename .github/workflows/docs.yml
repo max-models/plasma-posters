@@ -1,0 +1,38 @@
+name: Docs
+
+# The Astro + Starlight site in docs/: hand-written pages, the executed notebooks and the API
+# reference. Built on every push and pull request with the shared workflow of
+# max-models/starlight-theme; deployed to GitHub Pages from devel.
+
+on:
+  push:
+    branches: ["main", "devel"]
+  pull_request:
+    branches: ["main", "devel"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    uses: max-models/starlight-theme/.github/workflows/docs.yml@v0
+    with:
+      pre-build: uv run python docs/tools/examples.py
+      smoke-paths: |
+        getting-started/installation/index.html
+        examples/index.html
+        examples/blocks-and-columns/index.html
+        example-scripts/index.html
+        example-scripts/first-poster/index.html
+        api/plasma_posters/index.html
+        api/plasma_posters/main/index.html
+        api/plasma_posters/poster/index.html
+        examples/blocks-and-columns/blocks_and_columns.ipynb
+        example-scripts/first-poster/plot-1.png

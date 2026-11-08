@@ -1,0 +1,43 @@
+---
+title: plasma-posters
+description: Scientific posters from Python, written to a print-ready PDF.
+template: splash
+hero:
+  tagline: Scientific posters from Python, a layout of text, figures and equations written to a print-ready PDF.
+  actions:
+    - text: Get started
+      link: /plasma-posters/getting-started/installation/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/max-models/plasma-posters
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## What it does
+
+<CardGrid>
+	<Card title="Blocks in columns" icon="document">
+		A poster is a title, the authors and blocks of text and figures, stacked in columns.
+	</Card>
+	<Card title="LaTeX inside" icon="pencil">
+		Text, titles and captions are LaTeX, so equations look as they do in your papers.
+	</Card>
+	<Card title="Your figures" icon="seti:image">
+		Figures from Matplotlib, plasma-plots or maxplotlib go in as PDF, PNG or JPEG files.
+	</Card>
+	<Card title="Print-ready PDF" icon="rocket">
+		The poster is a tikzposter LaTeX file compiled with lualatex, in A0, A1 or A2.
+	</Card>
+</CardGrid>
+
+## Start here
+
+<CardGrid>
+	<LinkCard title="Installation" href="/plasma-posters/getting-started/installation/" description="Install the package and a TeX distribution." />
+	<LinkCard title="Quickstart" href="/plasma-posters/getting-started/quickstart/" description="Build a first poster." />
+	<LinkCard title="Examples" href="/plasma-posters/examples/" description="Executed notebooks and complete scripts." />
+	<LinkCard title="API reference" href="/plasma-posters/api/plasma_posters/" description="Generated from the docstrings." />
+</CardGrid>

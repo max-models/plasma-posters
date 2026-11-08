@@ -1,0 +1,84 @@
+# plasma-posters
+
+
+<!-- README.md is generated from README.qmd: edit the .qmd and run `make readme`. -->
+
+[![Tests](https://github.com/max-models/plasma-posters/actions/workflows/test_pytest.yml/badge.svg)](https://github.com/max-models/plasma-posters/actions/workflows/test_pytest.yml)
+[![Static
+analysis](https://github.com/max-models/plasma-posters/actions/workflows/static_analysis.yml/badge.svg)](https://github.com/max-models/plasma-posters/actions/workflows/static_analysis.yml)
+[![Docs](https://github.com/max-models/plasma-posters/actions/workflows/docs.yml/badge.svg)](https://max-models.github.io/plasma-posters/)
+[![codecov](https://codecov.io/gh/max-models/plasma-posters/branch/main/graph/badge.svg)](https://codecov.io/gh/max-models/plasma-posters)
+[![PyPI](https://img.shields.io/pypi/v/plasma-posters.png)](https://pypi.org/project/plasma-posters/)
+[![Python](https://img.shields.io/pypi/pyversions/plasma-posters.png)](https://pypi.org/project/plasma-posters/)
+
+Scientific posters from Python: a layout of text, figures and equations
+written to a print-ready PDF. A poster is a title, the authors and
+blocks of text and figures in columns; text, titles and captions are
+LaTeX, and the poster is a [tikzposter](https://ctan.org/pkg/tikzposter)
+file compiled with lualatex.
+
+Documentation: <https://max-models.github.io/plasma-posters/>
+
+## Install
+
+``` bash
+pip install plasma-posters
+```
+
+Compiling needs a TeX distribution with `lualatex` and the tikzposter
+class (TeX Live, MacTeX or MiKTeX).
+
+## A first poster
+
+``` python
+from plasma_posters import Poster
+
+poster = Poster(
+    "Speeds in a thermal plasma",
+    authors="Max Lindqvist",
+    institute="Max Planck Institute for Plasma Physics",
+    columns=2,
+)
+poster.block("The distribution", r"$f(v) \propto v^2 \exp(-m v^2 / 2 k_B T)$")
+poster.figure(
+    "Three temperatures", "maxwellian.pdf", caption="Normalised to its peak.", column=1
+)
+poster.build("poster.pdf")  # writes poster.tex next to it and compiles it
+```
+
+A `.tex` written with `poster.save("poster.tex")` and edited by hand is
+compiled with `plasma-posters build poster.tex`.
+
+## Development
+
+With [uv](https://docs.astral.sh/uv/):
+
+``` bash
+make install    # uv sync --extra dev, plus the pre-commit hooks
+make lint       # ruff check, ruff format --check, ssort, pyright
+make test       # pytest with coverage
+```
+
+## Build docs
+
+The documentation in `docs/` is an Astro + Starlight site with the
+shared [starlight-theme](https://github.com/max-models/starlight-theme):
+hand-written pages, the notebooks in `tutorials/` executed and published
+as pages, the scripts in `examples/` with their figures, and the API
+reference generated from the docstrings. It needs Node 22 or newer.
+
+``` bash
+make docs-install     # npm packages and the Python docs extra
+make docs-notebooks   # execute tutorials/*.ipynb and convert them to pages
+make docs-dev         # live preview at http://localhost:4321/plasma-posters/
+make docs-build       # the static site in docs/dist
+```
+
+## Releases
+
+Before merging a release to `main`, update the version in
+`pyproject.toml` and add the release notes to `CHANGELOG.md`. The push
+to `main` creates a GitHub release with a `vX.Y.Z` tag and publishes the
+package to PyPI with trusted publishing; the one-time setup is described
+in the [publishing
+guide](https://max-models.github.io/plasma-posters/development/publishing/).
