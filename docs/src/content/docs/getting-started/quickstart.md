@@ -28,6 +28,20 @@ poster.build("poster.pdf")
 relative to the `.tex` file. Blocks are stacked in their column in the order they are added;
 `size` (`"a0"`, `"a1"`, `"a2"`) and `orientation` (`"portrait"`, `"landscape"`) set the paper.
 
+## Check the layout
+
+`preview` renders the first page of the PDF as a PNG, small enough to look at on screen:
+
+```python
+from plasma_posters import preview
+
+preview("poster.pdf")  # writes poster.png next to it
+```
+
+It needs `pdftoppm` from [poppler](https://poppler.freedesktop.org/) (`poppler-utils` on Debian
+and Ubuntu, `brew install poppler` on macOS). The [example scripts](/plasma-posters/example-scripts/)
+show their posters this way.
+
 ## Edit the LaTeX by hand
 
 `poster.save("poster.tex")` writes the LaTeX without compiling it. After editing it, compile it with

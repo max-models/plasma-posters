@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import textwrap
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -26,6 +27,47 @@ SIZES = ("a0", "a1", "a2")
 
 #: Orientations of the tikzposter class.
 ORIENTATIONS = ("portrait", "landscape")
+
+
+def preview(pdf: str | Path, png: str | Path | None = None, dpi: int = 30) -> Path:
+    """Render the first page of a poster's PDF as a PNG, to check its layout.
+
+    Uses ``pdftoppm`` from poppler (``poppler-utils`` on Debian and Ubuntu, ``poppler`` in
+    Homebrew).
+
+    Args:
+        pdf: The poster's PDF.
+        png: The PNG to write; next to the PDF with the same name when None.
+        dpi: The resolution; 30 gives an A0 page about 1000 pixels high.
+
+    Returns:
+        The PNG's path.
+
+    Raises:
+        FileNotFoundError: If pdftoppm is not installed.
+        RuntimeError: If pdftoppm fails.
+    """
+    pdf = Path(pdf).resolve()
+    png = pdf.with_suffix(".png") if png is None else Path(png).resolve()
+    if shutil.which("pdftoppm") is None:
+        raise FileNotFoundError("pdftoppm is not installed: install poppler")
+    result = subprocess.run(
+        [
+            "pdftoppm",
+            "-png",
+            "-r",
+            str(dpi),
+            "-singlefile",
+            str(pdf),
+            str(png.with_suffix("")),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"pdftoppm failed on {pdf}: {result.stderr.strip()}")
+    return png
 
 
 @dataclass
@@ -115,7 +157,8 @@ class Poster:
 
         Args:
             title: The block's heading (LaTeX).
-            body: The text (LaTeX); paragraphs are separated by blank lines.
+            body: The text (LaTeX); paragraphs are separated by blank lines. Its common
+                indentation is removed, so it can be an indented triple-quoted string.
             column: The column to put the block in, from 0; blocks of a column are stacked
                 in the order they are added.
 
@@ -126,7 +169,7 @@ class Poster:
             raise ValueError(
                 f"column must be between 0 and {self.columns - 1}, not {column}"
             )
-        self.blocks.append(Block(title, body.strip(), column))
+        self.blocks.append(Block(title, textwrap.dedent(body).strip(), column))
 
     def figure(
         self,
@@ -167,7 +210,7 @@ class Poster:
         lines = [
             rf"\documentclass[25pt, {self.size}paper, {self.orientation}]{{tikzposter}}",
             r"\usepackage{graphicx}",
-            r"\usepackage{amsmath}",
+            r"\usepackage{amsmath, amssymb}",
             r"\usetheme{Simple}",
             "",
             rf"\title{{{self.title}}}",
