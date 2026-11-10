@@ -11,9 +11,9 @@ try:
 except PackageNotFoundError:  # not installed, e.g. run from a source tree
     __version__ = "0.0.0+unknown"
 
-from plasma_posters.poster import Block, Poster, compile_latex  # noqa: E402
+from plasma_posters.poster import Block, Poster, compile_latex, preview  # noqa: E402
 
-__all__ = ["Block", "Poster", "__version__", "compile_latex"]
+__all__ = ["Block", "Poster", "__version__", "compile_latex", "preview"]
 
 # The decorated functions pick the tag up, so registering after the imports is in time.
 sp.register_opt_in_tag(*PROFILE_TAGS)

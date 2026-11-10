@@ -180,3 +180,4 @@ examples/*.aux
 examples/*.log
 examples/*.pdf
 examples/*.tex
+examples/*.png

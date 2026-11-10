@@ -25,6 +25,9 @@ Debian or Ubuntu:
 sudo apt install texlive-luatex texlive-pictures texlive-latex-extra
 ```
 
+`plasma_posters.preview`, which renders a poster as a PNG, also needs `pdftoppm` from poppler
+(`poppler-utils` on Debian and Ubuntu, `brew install poppler` on macOS).
+
 Check the installation with:
 
 ```bash

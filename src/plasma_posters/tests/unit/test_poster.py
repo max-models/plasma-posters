@@ -7,7 +7,7 @@ import subprocess
 
 import pytest
 
-from plasma_posters import Poster, compile_latex
+from plasma_posters import Poster, compile_latex, preview
 from plasma_posters.main import main
 
 
@@ -122,3 +122,55 @@ def test_a_poster_compiles_to_a_pdf(tmp_path):
     pdf = poster.build(tmp_path / "poster.pdf")
     assert pdf == (tmp_path / "poster.pdf").resolve()
     assert pdf.read_bytes().startswith(b"%PDF")
+
+
+def test_a_missing_pdftoppm_is_reported(tmp_path, monkeypatch):
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+    with pytest.raises(FileNotFoundError, match="pdftoppm"):
+        preview(tmp_path / "poster.pdf")
+
+
+def test_the_preview_is_next_to_the_pdf_unless_given(tmp_path, monkeypatch):
+    calls = []
+
+    def run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(subprocess, "run", run)
+    assert preview(tmp_path / "poster.pdf") == tmp_path / "poster.png"
+    assert calls[-1][-1] == str(tmp_path / "poster")
+    assert (
+        preview(tmp_path / "poster.pdf", tmp_path / "a.png", dpi=50)
+        == tmp_path / "a.png"
+    )
+    assert calls[-1][3] == "50"
+
+
+def test_a_pdftoppm_error_is_raised(tmp_path, monkeypatch):
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a, 1, "", "May not be a PDF file"),
+    )
+    with pytest.raises(RuntimeError, match="May not be a PDF"):
+        preview(tmp_path / "poster.pdf")
+
+
+@pytest.mark.skipif(
+    shutil.which("lualatex") is None or shutil.which("pdftoppm") is None,
+    reason="needs lualatex and pdftoppm",
+)
+def test_a_compiled_poster_has_a_preview(tmp_path):
+    poster = Poster("A poster", size="a2")
+    poster.block("Text", "Plain text.")
+    png = preview(poster.build(tmp_path / "poster.pdf"))
+    assert png.read_bytes().startswith(b"\x89PNG")
+
+
+def test_a_body_is_dedented():
+    poster = Poster("T")
+    poster.block("B", "\n    first\n      second\n    ")
+    assert poster.blocks[0].body == "first\n  second"

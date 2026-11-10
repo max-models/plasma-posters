@@ -1,17 +1,16 @@
 """First poster.
 
-A two-column A0 poster with an equation and a Matplotlib figure. The script writes
-``first_poster.tex`` next to itself and compiles it to ``first_poster.pdf`` when lualatex is
-installed; the figure on the poster appears below the source.
+A two-column A0 poster with an equation and a Matplotlib figure: the smallest complete poster.
+The script writes ``first_poster.tex`` and ``first_poster.pdf`` next to itself and shows the
+poster below the source.
 """
 
-import shutil
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from plasma_posters import Poster
+from plasma_posters import Poster, preview
 
 HERE = Path(__file__).resolve().parent
 
@@ -24,6 +23,7 @@ for temperature in (0.5, 1.0, 2.0):
 ax.set(xlabel="speed v", ylabel="f(v) / max f")
 ax.legend()
 fig.savefig(HERE / "maxwellian.pdf", bbox_inches="tight")
+plt.close(fig)
 
 poster = Poster(
     "Speeds in a thermal plasma",
@@ -47,8 +47,9 @@ poster.figure(
     caption="The distribution, normalised to its peak.",
     column=1,
 )
+pdf = poster.build(HERE / "first_poster.pdf")
 
-if shutil.which("lualatex"):
-    print(f"wrote {poster.build(HERE / 'first_poster.pdf')}")
-else:
-    print(f"wrote {poster.save(HERE / 'first_poster.tex')} (no lualatex for the PDF)")
+# the poster, as the docs show it
+fig, ax = plt.subplots(figsize=(6, 8.5))
+ax.imshow(plt.imread(preview(pdf)))
+ax.set_axis_off()
