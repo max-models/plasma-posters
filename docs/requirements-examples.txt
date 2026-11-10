@@ -1,0 +1,9 @@
+# The packages of the example posters that draw real data with plasma-plots, installed by the
+# docs build before it runs examples/ (pre-build in .github/workflows/docs.yml). They are not
+# extras of plasma-posters: freeofcharge is not on PyPI, and GVEC builds a Fortran core that
+# needs gfortran, LAPACK and netcdf-fortran (libnetcdff-dev). Locally:
+#     uv pip install -r docs/requirements-examples.txt
+desc-opt
+gvec
+freeofcharge @ git+https://github.com/max-models/freeofcharge@devel
+plasma-plots @ git+https://github.com/max-models/plasma-plots@devel

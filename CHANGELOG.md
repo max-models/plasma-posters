@@ -7,6 +7,12 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Example posters with plasma-plots figures of real data: "Neutral beam poster" (a
+  freeofcharge run of a 1 MeV beam in an ITER-sized plasma), "Stellarator poster" (GVEC's
+  tutorial stellarator, solved when the script runs) and "Optimised stellarators poster"
+  (DESC's example equilibria). Their packages are in `docs/requirements-examples.txt`, installed
+  by the docs build.
+- A long title wraps instead of running off the title box.
 - `preview(pdf)`: the first page of a poster as a PNG, with poppler's `pdftoppm`, to check a
   layout.
 - The preamble loads `amssymb` too (`\lesssim`, `\mathbb` and the other AMS symbols), and
