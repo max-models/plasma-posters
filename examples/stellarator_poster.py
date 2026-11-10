@@ -4,8 +4,9 @@ A two-column A0 poster on a stellarator equilibrium computed with
 `GVEC <https://gvec.readthedocs.io/>`_: GVEC's tutorial stellarator, three field periods of a
 rotating ellipse. The equilibrium is solved when the script runs (a few seconds) and evaluated
 on a grid; `plasma-plots <https://max-models.github.io/plasma-plots/>`_ reads the evaluations
-(``from_gvec``) and draws the poloidal planes, ``|B|`` on a flux surface in GVEC's and Boozer's
-angles, and the profiles. It needs ``pip install gvec``, which builds GVEC's Fortran core.
+(``from_gvec``) and draws the poloidal planes, a 3-D cutaway of the torus, ``|B|`` on a flux
+surface in GVEC's and Boozer's angles, and the profiles. It needs ``pip install gvec``, which
+builds GVEC's Fortran core, and PyVista for the 3-D view.
 """
 
 import os
@@ -19,11 +20,13 @@ import gvec
 import matplotlib.pyplot as plt
 import numpy as np
 import plasma_plots
+import pyvista as pv
 from plasma_plots import save_figure
 
 from plasma_posters import Poster, preview
 
 HERE = Path(__file__).resolve().parent
+pv.OFF_SCREEN = True  # the 3-D view is rendered without a window
 
 # --- the equilibrium: GVEC's tutorial stellarator ---------------------------------------------
 parameters = {
@@ -66,6 +69,16 @@ boozer = plasma_plots.from_gvec(
     )
 )
 
+# the whole torus, for the 3-D view
+torus = plasma_plots.from_gvec(
+    state.evaluate(
+        *("mod_B", "pos", "N_FP"),
+        rho=9,
+        theta=48,
+        zeta=np.linspace(0, 2 * np.pi, 32 * state.nfp, endpoint=False),
+    )
+)
+
 # --- the figures ------------------------------------------------------------------------------
 planes = ev.mod_B.plasma.plot.panels(
     sweep="zeta",
@@ -91,6 +104,18 @@ with plasma_plots.figure(1, 2, figsize=(7, 3)) as fig:
 save_figure(fig, HERE / "stellarator_profiles", formats=("pdf",))
 plt.close("all")
 
+# 3-D: |B| on the surface rho = 0.5, cut open at three toroidal angles
+plotter = torus.mod_B.plasma.plot.slices_3d(
+    cuts={"rho": [0.5], "zeta": [0.0, np.pi / 2, np.pi]}
+)
+plotter.camera_position = "iso"
+plotter.reset_camera()
+plotter.camera.zoom(1.3)
+plasma_plots.scene(plotter, window_size=[1000, 700]).save_png(
+    HERE / "stellarator_3d.png"
+)
+plotter.close()
+
 # --- the poster -------------------------------------------------------------------------------
 poster = Poster(
     "A three-period stellarator with GVEC",
@@ -113,7 +138,13 @@ poster.figure(
     "Poloidal planes",
     "stellarator_planes.pdf",
     caption=r"$|B|$ across one field period, with flux-coordinate lines.",
-    width=0.8,
+    width=0.7,
+)
+poster.figure(
+    "In three dimensions",
+    "stellarator_3d.png",
+    caption=r"$|B|$ on the flux surface $\rho = 0.5$, cut open at three toroidal angles.",
+    column=1,
 )
 poster.figure(
     r"$|B|$ on the surface $\rho = 0.5$",
@@ -125,7 +156,6 @@ poster.figure(
     "Profiles",
     "stellarator_profiles.pdf",
     caption=r"The rotational transform with its low-order rationals, and the pressure.",
-    column=1,
 )
 pdf = poster.build(HERE / "stellarator_poster.pdf")
 

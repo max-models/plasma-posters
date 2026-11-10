@@ -4,8 +4,9 @@ A three-column A0 landscape poster on optimised stellarators, from the equilibri
 `DESC <https://desc-docs.readthedocs.io/>`_ ships: W7-X, the precise quasi-axisymmetric and
 quasi-helical configurations, NCSX, HELIOTRON, ESTELL and the tokamak DSHAPE.
 `plasma-plots <https://max-models.github.io/plasma-plots/>`_ evaluates them (``from_desc``) and
-draws the poloidal planes, ``|B|`` on the boundary in PEST angles and W7-X's profiles. It needs
-``pip install desc-opt``.
+draws W7-X in 3-D (``|B|`` cut open, with PyVista), the poloidal planes of
+the others, ``|B|`` on the boundary in PEST angles and W7-X's profiles. It needs
+``pip install desc-opt`` and PyVista.
 """
 
 import warnings
@@ -15,12 +16,14 @@ import desc.examples
 import matplotlib.pyplot as plt
 import numpy as np
 import plasma_plots
+import pyvista as pv
 from plasma_plots import save_figure
 
 from plasma_posters import Poster, preview
 
 HERE = Path(__file__).resolve().parent
 warnings.filterwarnings("ignore", module="desc")  # DESC's notes on JAX and resolutions
+pv.OFF_SCREEN = True  # the 3-D views are rendered without a window
 
 
 def example(name):
@@ -30,25 +33,33 @@ def example(name):
         return desc.examples.get(name)
 
 
-# --- W7-X: three poloidal planes over half a field period, and its profiles -----------------
+# --- W7-X in 3-D: |B| cut open; its profiles -------------------------------
 w7x = example("W7-X")
-planes = plasma_plots.from_desc(
+torus = plasma_plots.from_desc(
     w7x,
-    ["|B|", "theta_PEST"],
-    rho=13,
-    theta=96,
-    zeta=np.linspace(0, np.pi / w7x.NFP, 3),
+    "|B|",
+    rho=9,
+    theta=48,
+    zeta=np.linspace(0, 2 * np.pi, 32 * w7x.NFP, endpoint=False),
 )
-result = planes["|B|"].plasma.plot.panels(
-    sweep="zeta",
-    coords="physical",
-    plane="RZ",
-    nrows=3,
-    ncols=1,
-    overlays={"coordinate_lines": {"rho": 4, "theta_P": 12}},
+
+
+def render(plotter, path, zoom=1.2):
+    """A PNG of a PyVista scene, seen from above at an angle."""
+    plotter.camera_position = "iso"
+    plotter.reset_camera()
+    plotter.camera.zoom(zoom)
+    plasma_plots.scene(plotter, window_size=[1000, 700]).save_png(path)
+    plotter.close()
+
+
+render(
+    torus["|B|"].plasma.plot.slices_3d(
+        cuts={"rho": [0.5], "zeta": [0.0, np.pi / 2, np.pi]}
+    ),
+    HERE / "desc_w7x_3d.png",
+    zoom=1.7,
 )
-result.fig.set_size_inches(4.5, 9)
-save_figure(result, HERE / "desc_w7x_planes", formats=("pdf",))
 
 profiles = plasma_plots.from_desc(w7x, ["iota", "D_Mercier"], rho=17, theta=8, zeta=4)
 with plasma_plots.figure(1, 2, figsize=(7, 3)) as fig:
@@ -103,9 +114,8 @@ poster.block(
 )
 poster.figure(
     "W7-X",
-    "desc_w7x_planes.pdf",
-    caption="$|B|$ over half a field period, with flux-coordinate lines.",
-    width=0.5,
+    "desc_w7x_3d.png",
+    caption=r"$|B|$ on the flux surface $\rho = 0.5$, cut open at three toroidal angles.",
 )
 poster.figure(
     "DESC's example library",
@@ -123,7 +133,6 @@ poster.figure(
     "W7-X profiles",
     "desc_w7x_profiles.pdf",
     caption=r"The rotational transform with its rationals, and the Mercier criterion.",
-    column=2,
 )
 pdf = poster.build(HERE / "desc_poster.pdf")
 

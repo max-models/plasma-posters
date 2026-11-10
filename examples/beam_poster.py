@@ -4,7 +4,7 @@ A two-column A0 poster on neutral beam injection, made from a run of
 `freeofcharge <https://max-models.github.io/freeofcharge/>`_: a 1 MeV deuterium beam in an
 ITER-sized Solov'ev equilibrium, its fast ions slowed down on their flux surfaces. The profiles
 and the density scan are drawn with `plasma-plots <https://max-models.github.io/plasma-plots/>`_
-from labelled xarray data, the top view of the beam with Matplotlib. The run takes about
+from labelled xarray data, the beam in 3-D with PyVista. The run takes about
 20 seconds.
 """
 
@@ -14,6 +14,7 @@ import freeofcharge as foc
 import matplotlib.pyplot as plt
 import numpy as np
 import plasma_plots
+import pyvista as pv
 import xarray as xr
 from plasma_plots import save_figure
 
@@ -66,17 +67,26 @@ current = fast.current_density / 1e3
 current.attrs.update(long_name="driven current density", units="kA/m^2")
 
 # --- the figures ------------------------------------------------------------------------------
-# top view: the wall, the plasma edge at the midplane and where the fast ions are born
-fig, ax = plt.subplots(figsize=(5, 5))
-phi = np.linspace(0, 2 * np.pi, 200)
-wall = equilibrium.wall.vertices[:, 0]
-for radius in (wall.min(), wall.max()):
-    ax.plot(radius * np.cos(phi), radius * np.sin(phi), color="gray")
+# 3-D: three quarters of the plasma edge, the beam's paths and where the fast ions are born
+edge = equilibrium.boundary.vertices  # (R, Z) of the last closed flux surface
+phi = np.linspace(0, 1.5 * np.pi, 120)[:, None]  # three quarters of the torus
+r, z = edge[:, 0][None, :], edge[:, 1][None, :]
+plasma_edge = pv.StructuredGrid(
+    r * np.cos(phi), r * np.sin(phi), np.repeat(z, len(phi), axis=0)
+)
+plotter = pv.Plotter(off_screen=True)
+plotter.add_mesh(plasma_edge, color="lightsteelblue", opacity=0.35, smooth_shading=True)
 births = np.asarray(deposition.births.positions)
-ax.plot(births[:, 0], births[:, 1], ".", markersize=1, alpha=0.3)
-ax.set(xlabel="x [m]", ylabel="y [m]", aspect="equal")
-fig.savefig(HERE / "beam_top_view.pdf", bbox_inches="tight")
-plt.close(fig)
+plotter.add_mesh(
+    pv.PolyData(births), color="tab:red", point_size=3, render_points_as_spheres=True
+)
+starts = np.asarray(beam.markers.positions)[::40]
+for start in starts:
+    plotter.add_mesh(pv.Line(start, start + 16.0 * np.asarray(direction)), color="gray")
+# looking down from behind the cut, at a point between the torus and the beam's entry
+plotter.camera_position = [(-10.0, -30.0, 16.0), (2.0, -3.0, -1.0), (0.0, 0.0, 1.0)]
+plasma_plots.scene(plotter, window_size=[1000, 800]).save_png(HERE / "beam_3d.png")
+plotter.close()
 
 with plasma_plots.figure(figsize=(6, 3.5)) as fig:
     shine.plasma.plot.lineout(x="ne0", ax=fig[0])
@@ -109,9 +119,11 @@ poster.block(
 )
 poster.figure(
     "Where the ions are born",
-    "beam_top_view.pdf",
-    caption="Top view: the birth points of the fast ions inside the wall.",
-    width=0.75,
+    "beam_3d.png",
+    caption=(
+        "The beam's paths (grey) through three quarters of the plasma edge, and the birth "
+        "points of the fast ions (red)."
+    ),
 )
 poster.figure(
     "Shine-through",

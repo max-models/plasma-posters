@@ -10,8 +10,9 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Example posters with plasma-plots figures of real data: "Neutral beam poster" (a
   freeofcharge run of a 1 MeV beam in an ITER-sized plasma), "Stellarator poster" (GVEC's
   tutorial stellarator, solved when the script runs) and "Optimised stellarators poster"
-  (DESC's example equilibria). Their packages are in `docs/requirements-examples.txt`, installed
-  by the docs build.
+  (DESC's example equilibria), each with a 3-D view rendered by PyVista: the beam through three
+  quarters of the plasma edge, and the stellarators cut open on a flux surface. Their packages
+  are in `docs/requirements-examples.txt`, installed by the docs build.
 - A long title wraps instead of running off the title box.
 - `preview(pdf)`: the first page of a poster as a PNG, with poppler's `pdftoppm`, to check a
   layout.
