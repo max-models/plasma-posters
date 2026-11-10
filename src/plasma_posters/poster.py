@@ -213,7 +213,8 @@ class Poster:
             r"\usepackage{amsmath, amssymb}",
             r"\usetheme{Simple}",
             "",
-            rf"\title{{{self.title}}}",
+            # a parbox, so a long title wraps instead of running off the title box
+            rf"\title{{\parbox{{0.8\linewidth}}{{\centering {self.title}}}}}",
             rf"\author{{{self.authors}}}",
             rf"\institute{{{self.institute}}}",
             "",

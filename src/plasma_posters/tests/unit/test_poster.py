@@ -22,7 +22,7 @@ def _poster() -> Poster:
 def test_the_document_has_the_class_title_and_columns():
     tex = _poster().to_latex()
     assert tex.startswith(r"\documentclass[25pt, a0paper, portrait]{tikzposter}")
-    assert r"\title{Negative ions}" in tex
+    assert r"\title{\parbox{0.8\linewidth}{\centering Negative ions}}" in tex
     assert r"\author{A. Author}" in tex
     assert r"\institute{IPP}" in tex
     assert tex.count(r"\column{0.5}") == 2

@@ -24,22 +24,35 @@ jobs:
   docs:
     uses: max-models/starlight-theme/.github/workflows/docs.yml@v0
     with:
-      # the example scripts compile their posters and render them as PNGs
-      apt-packages: texlive-luatex texlive-pictures texlive-latex-extra poppler-utils
-      pre-build: uv run python docs/tools/examples.py
+      # the example scripts compile their posters and render them as PNGs (TeX Live, poppler);
+      # the GVEC example builds GVEC's Fortran core (gfortran, LAPACK, netcdf-fortran); the 3-D
+      # views are rendered by PyVista on a virtual display (xvfb)
+      xvfb: true
+      apt-packages: >-
+        texlive-luatex texlive-pictures texlive-latex-extra poppler-utils
+        gfortran liblapack-dev libnetcdf-dev libnetcdff-dev
+      pre-build: >-
+        uv pip install -r docs/requirements-examples.txt &&
+        xvfb-run -a uv run --no-sync python docs/tools/examples.py
       smoke-paths: |
         getting-started/installation/index.html
         examples/index.html
         examples/blocks-and-columns/index.html
         example-scripts/index.html
+        example-scripts/beam-poster/index.html
         example-scripts/debye-shielding/index.html
+        example-scripts/desc-poster/index.html
         example-scripts/first-poster/index.html
         example-scripts/landscape-poster/index.html
         example-scripts/lists-and-tables/index.html
         example-scripts/sizes-and-orientations/index.html
+        example-scripts/stellarator-poster/index.html
         api/plasma_posters/index.html
         api/plasma_posters/main/index.html
         api/plasma_posters/poster/index.html
         examples/blocks-and-columns/blocks_and_columns.ipynb
         example-scripts/first-poster/plot-1.png
         example-scripts/sizes-and-orientations/plot-1.png
+        example-scripts/beam-poster/plot-1.png
+        example-scripts/desc-poster/plot-1.png
+        example-scripts/stellarator-poster/plot-1.png
