@@ -38,6 +38,9 @@ from plasma_posters import preview
 preview("poster.pdf")  # writes poster.png next to it
 ```
 
+`preview(pdf, page=2)` renders another page, and `preview_pages(pdf)` every page as
+`poster-1.png`, `poster-2.png`, ... (the slides of a talk, for example).
+
 It needs `pdftoppm` from [poppler](https://poppler.freedesktop.org/) (`poppler-utils` on Debian
 and Ubuntu, `brew install poppler` on macOS). The [example scripts](/plasma-posters/example-scripts/)
 show their posters this way.
