@@ -29,45 +29,94 @@ SIZES = ("a0", "a1", "a2")
 ORIENTATIONS = ("portrait", "landscape")
 
 
-def preview(pdf: str | Path, png: str | Path | None = None, dpi: int = 30) -> Path:
-    """Render the first page of a poster's PDF as a PNG, to check its layout.
-
-    Uses ``pdftoppm`` from poppler (``poppler-utils`` on Debian and Ubuntu, ``poppler`` in
-    Homebrew).
-
-    Args:
-        pdf: The poster's PDF.
-        png: The PNG to write; next to the PDF with the same name when None.
-        dpi: The resolution; 30 gives an A0 page about 1000 pixels high.
-
-    Returns:
-        The PNG's path.
-
-    Raises:
-        FileNotFoundError: If pdftoppm is not installed.
-        RuntimeError: If pdftoppm fails.
-    """
-    pdf = Path(pdf).resolve()
-    png = pdf.with_suffix(".png") if png is None else Path(png).resolve()
+def _pdftoppm(pdf: Path, arguments: list[str], root: Path) -> None:
+    """Run pdftoppm on a PDF, writing PNGs named after ``root``."""
     if shutil.which("pdftoppm") is None:
         raise FileNotFoundError("pdftoppm is not installed: install poppler")
     result = subprocess.run(
-        [
-            "pdftoppm",
-            "-png",
-            "-r",
-            str(dpi),
-            "-singlefile",
-            str(pdf),
-            str(png.with_suffix("")),
-        ],
+        ["pdftoppm", "-png", *arguments, str(pdf), str(root)],
         capture_output=True,
         text=True,
         check=False,
     )
     if result.returncode != 0:
         raise RuntimeError(f"pdftoppm failed on {pdf}: {result.stderr.strip()}")
+
+
+def preview(
+    pdf: str | Path, png: str | Path | None = None, dpi: int = 30, page: int = 1
+) -> Path:
+    """Render a page of a PDF as a PNG, to check its layout.
+
+    Uses ``pdftoppm`` from poppler (``poppler-utils`` on Debian and Ubuntu, ``poppler`` in
+    Homebrew).
+
+    Args:
+        pdf: The PDF, e.g. a poster's.
+        png: The PNG to write; next to the PDF with the same name when None.
+        dpi: The resolution; 30 gives an A0 page about 1000 pixels high.
+        page: The page to render, from 1.
+
+    Returns:
+        The PNG's path.
+
+    Raises:
+        ValueError: If the page is less than 1.
+        FileNotFoundError: If pdftoppm is not installed.
+        RuntimeError: If pdftoppm fails, e.g. on a page the PDF does not have.
+    """
+    if page < 1:
+        raise ValueError(f"page must be at least 1, not {page}")
+    pdf = Path(pdf).resolve()
+    png = pdf.with_suffix(".png") if png is None else Path(png).resolve()
+    _pdftoppm(
+        pdf,
+        ["-r", str(dpi), "-f", str(page), "-l", str(page), "-singlefile"],
+        png.with_suffix(""),
+    )
     return png
+
+
+def preview_pages(
+    pdf: str | Path, folder: str | Path | None = None, dpi: int = 30
+) -> list[Path]:
+    """Render every page of a PDF as a PNG, e.g. the slides of a talk.
+
+    The PNGs are ``<name>-<page>.png`` (with pdftoppm's zero padding, ``talk-01.png`` for a
+    PDF of 10 to 99 pages); earlier PNGs of that name in the folder are removed first, so the
+    list holds only this PDF's pages.
+
+    Args:
+        pdf: The PDF.
+        folder: The folder for the PNGs; the PDF's folder when None.
+        dpi: The resolution; 30 gives an A0 page about 1000 pixels high, a 16:9 slide
+            (16 cm wide) about 190 pixels wide, 100 a slide about 630 pixels wide.
+
+    Returns:
+        The PNGs, in page order.
+
+    Raises:
+        FileNotFoundError: If pdftoppm is not installed.
+        RuntimeError: If pdftoppm fails.
+    """
+    pdf = Path(pdf).resolve()
+    folder = pdf.parent if folder is None else Path(folder).resolve()
+    folder.mkdir(parents=True, exist_ok=True)
+
+    def numbered(folder: Path) -> dict[Path, int]:
+        """The PNGs of the PDF's pages in a folder, with their page numbers."""
+        pages = {}
+        for png in folder.glob(f"{pdf.stem}-*.png"):
+            suffix = png.stem[len(pdf.stem) + 1 :]
+            if suffix.isdigit():
+                pages[png] = int(suffix)
+        return pages
+
+    for old in numbered(folder):
+        old.unlink()
+    _pdftoppm(pdf, ["-r", str(dpi)], folder / pdf.stem)
+    pages = numbered(folder)
+    return sorted(pages, key=pages.__getitem__)
 
 
 @dataclass

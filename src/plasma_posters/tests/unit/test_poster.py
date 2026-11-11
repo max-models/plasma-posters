@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 
-from plasma_posters import Poster, compile_latex, preview
+from plasma_posters import Poster, compile_latex, preview, preview_pages
 from plasma_posters.main import main
 
 
@@ -168,6 +169,63 @@ def test_a_compiled_poster_has_a_preview(tmp_path):
     poster.block("Text", "Plain text.")
     png = preview(poster.build(tmp_path / "poster.pdf"))
     assert png.read_bytes().startswith(b"\x89PNG")
+
+
+def test_preview_renders_the_page_asked_for(tmp_path, monkeypatch):
+    calls = []
+
+    def run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(subprocess, "run", run)
+    preview(tmp_path / "talk.pdf", page=3)
+    assert calls[-1][4:8] == ["-f", "3", "-l", "3"]
+    with pytest.raises(ValueError, match="page must be at least 1"):
+        preview(tmp_path / "talk.pdf", page=0)
+
+
+def test_preview_pages_lists_the_pages_in_order(tmp_path, monkeypatch):
+    calls = []
+
+    def run(command, **kwargs):
+        calls.append(command)
+        root = Path(command[-1])
+        for page in (1, 2, 10):  # pdftoppm pads to the widest page number
+            Path(f"{root}-{page:02d}.png").write_bytes(b"png")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(subprocess, "run", run)
+    (tmp_path / "talk-7.png").write_bytes(b"an earlier run")
+    (tmp_path / "talk-notes.png").write_bytes(b"not a page")
+    pages = preview_pages(tmp_path / "talk.pdf", dpi=100)
+    assert [png.name for png in pages] == ["talk-01.png", "talk-02.png", "talk-10.png"]
+    assert not (tmp_path / "talk-7.png").exists()
+    assert (tmp_path / "talk-notes.png").exists()
+    assert calls[-1][2:4] == ["-r", "100"]
+    pages = preview_pages(tmp_path / "talk.pdf", tmp_path / "slides")
+    assert pages[0].parent == tmp_path / "slides"
+
+
+@pytest.mark.skipif(
+    shutil.which("lualatex") is None or shutil.which("pdftoppm") is None,
+    reason="needs lualatex and pdftoppm",
+)
+def test_every_page_of_a_pdf_is_previewed(tmp_path):
+    tex = tmp_path / "pages.tex"
+    tex.write_text(
+        "\\documentclass{article}\\begin{document}One\\newpage Two\\newpage Three"
+        "\\end{document}\n"
+    )
+    pdf = compile_latex(tex)
+    pages = preview_pages(pdf, dpi=20)
+    assert len(pages) == 3
+    assert all(png.read_bytes().startswith(b"\x89PNG") for png in pages)
+    assert preview(pdf, tmp_path / "two.png", dpi=20, page=2).is_file()
+    with pytest.raises(RuntimeError, match="pdftoppm failed"):
+        preview(pdf, page=9)
 
 
 def test_a_body_is_dedented():

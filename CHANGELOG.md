@@ -7,6 +7,9 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `preview(pdf, page=...)` renders any page, and `preview_pages(pdf)` every page of a PDF as
+  `<name>-<page>.png`, in page order, e.g. the slides of a talk.
+
 - Example posters with plasma-plots figures of real data: "Neutral beam poster" (a
   freeofcharge run of a 1 MeV beam in an ITER-sized plasma), "Stellarator poster" (GVEC's
   tutorial stellarator, solved when the script runs) and "Optimised stellarators poster"
